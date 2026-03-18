@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# === PERSONAL DATA — NEVER COMMIT ===
+data-json/vanshavali.db
+data-json/vanshavali.db-wal
+data-json/vanshavali.db-shm
+data-json/photos/
+data-json/.vanshavali-auth.json
+data-json/familyMembersData.json
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Env files
+.env
+.env.local
+.env.production
+
+# Electron build output
+out/
+release/

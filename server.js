@@ -863,9 +863,10 @@ app.post('/api/chat', async (req, res) => {
   if (!message) return res.status(400).json({ error: 'Message is required' });
 
   const apiKey = config?.apiKey;
-  if (!apiKey) {
+  const isLocal = config?.provider === 'local';
+  if (!apiKey && !isLocal) {
     return res.status(400).json({
-      error: 'AI not configured. Please add your Ollama Cloud API key in Settings → AI Configuration.',
+      error: 'AI not configured. Please add your API key in Settings → AI Configuration.',
     });
   }
 

@@ -331,15 +331,37 @@ function AIConfigSection({ onMessage }) {
   const getConfig = () => {
     try {
       const stored = localStorage.getItem('vanshavali-ai-config');
-      return stored ? JSON.parse(stored) : { apiKey: '', baseUrl: 'https://api.ollama.com/v1', model: 'qwen3.5' };
-    } catch { return { apiKey: '', baseUrl: 'https://api.ollama.com/v1', model: 'qwen3.5' }; }
+      return stored ? JSON.parse(stored) : { provider: 'ollama', apiKey: '', baseUrl: 'https://ollama.com/v1', model: 'qwen3.5' };
+    } catch { return { provider: 'ollama', apiKey: '', baseUrl: 'https://ollama.com/v1', model: 'qwen3.5' }; }
   };
+
+  const PROVIDERS = [
+    { id: 'ollama', name: 'Ollama Cloud', baseUrl: 'https://ollama.com/v1', models: 'qwen3.5, deepseek-v3.2, glm-5, nemotron-3-super', defaultModel: 'qwen3.5' },
+    { id: 'openai', name: 'OpenAI', baseUrl: 'https://api.openai.com/v1', models: 'gpt-4o, gpt-4o-mini, gpt-3.5-turbo', defaultModel: 'gpt-4o-mini' },
+    { id: 'anthropic', name: 'Anthropic', baseUrl: 'https://api.anthropic.com/v1', models: 'claude-sonnet-4-6, claude-haiku-4-5', defaultModel: 'claude-sonnet-4-6' },
+    { id: 'groq', name: 'Groq', baseUrl: 'https://api.groq.com/openai/v1', models: 'llama-3.3-70b, mixtral-8x7b', defaultModel: 'llama-3.3-70b' },
+    { id: 'together', name: 'Together AI', baseUrl: 'https://api.together.xyz/v1', models: 'meta-llama/Llama-3-70b, Qwen/Qwen2.5-72B', defaultModel: 'meta-llama/Llama-3-70b' },
+    { id: 'local', name: 'Local Ollama', baseUrl: 'http://localhost:11434/v1', models: 'Any model you have pulled locally', defaultModel: 'qwen2.5:7b' },
+    { id: 'custom', name: 'Custom', baseUrl: '', models: 'Any OpenAI-compatible API', defaultModel: '' },
+  ];
 
   const [config, setConfig] = useState(getConfig);
   const [showKey, setShowKey] = useState(false);
 
+  const selectProvider = (providerId) => {
+    const provider = PROVIDERS.find(p => p.id === providerId);
+    if (provider) {
+      setConfig({
+        ...config,
+        provider: providerId,
+        baseUrl: provider.baseUrl,
+        model: provider.defaultModel,
+      });
+    }
+  };
+
   const saveConfig = () => {
-    if (config.apiKey) {
+    if (config.apiKey || config.provider === 'local') {
       localStorage.setItem('vanshavali-ai-config', JSON.stringify(config));
       onMessage('AI configuration saved! You can now use the chat panel.');
     } else {
@@ -350,9 +372,11 @@ function AIConfigSection({ onMessage }) {
 
   const clearConfig = () => {
     localStorage.removeItem('vanshavali-ai-config');
-    setConfig({ apiKey: '', baseUrl: 'https://api.ollama.com/v1', model: 'qwen3.5' });
+    setConfig({ provider: 'ollama', apiKey: '', baseUrl: 'https://ollama.com/v1', model: 'qwen3.5' });
     onMessage('AI configuration cleared.');
   };
+
+  const activeProvider = PROVIDERS.find(p => p.id === config.provider) || PROVIDERS[0];
 
   return (
     <div className="card mb-6">
@@ -363,15 +387,36 @@ function AIConfigSection({ onMessage }) {
       </p>
 
       <div className="space-y-4">
+        {/* Provider Selection */}
         <div>
-          <label className="label">API Key</label>
+          <label className="label">Provider</label>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {PROVIDERS.map(p => (
+              <button
+                key={p.id}
+                onClick={() => selectProvider(p.id)}
+                className={`px-3 py-2 rounded-lg border text-xs font-medium transition-all ${
+                  config.provider === p.id
+                    ? 'bg-saffron-50 border-saffron-300 text-saffron-700'
+                    : 'bg-white border-stone-300 text-stone-500 hover:bg-stone-50'
+                }`}
+              >
+                {p.name}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* API Key */}
+        <div>
+          <label className="label">API Key {config.provider === 'local' && <span className="text-stone-400 font-normal">(not needed for local)</span>}</label>
           <div className="flex gap-2">
             <input
               type={showKey ? 'text' : 'password'}
               className="input flex-1"
               value={config.apiKey}
               onChange={e => setConfig({ ...config, apiKey: e.target.value })}
-              placeholder="Enter your Ollama Cloud API key"
+              placeholder={config.provider === 'local' ? 'Not required' : `Enter your ${activeProvider.name} API key`}
             />
             <button
               type="button"
@@ -383,6 +428,7 @@ function AIConfigSection({ onMessage }) {
           </div>
         </div>
 
+        {/* Base URL */}
         <div>
           <label className="label">Base URL</label>
           <input
@@ -390,11 +436,12 @@ function AIConfigSection({ onMessage }) {
             className="input"
             value={config.baseUrl}
             onChange={e => setConfig({ ...config, baseUrl: e.target.value })}
-            placeholder="https://api.ollama.com/v1"
+            placeholder={activeProvider.baseUrl}
           />
-          <p className="text-xs text-stone-400 mt-1">Change this if using a different provider (OpenAI, local Ollama, etc.)</p>
+          <p className="text-xs text-stone-400 mt-1">Auto-filled from provider. Edit for custom endpoints.</p>
         </div>
 
+        {/* Model */}
         <div>
           <label className="label">Model</label>
           <input
@@ -402,9 +449,9 @@ function AIConfigSection({ onMessage }) {
             className="input"
             value={config.model}
             onChange={e => setConfig({ ...config, model: e.target.value })}
-            placeholder="qwen3.5"
+            placeholder={activeProvider.defaultModel}
           />
-          <p className="text-xs text-stone-400 mt-1">Ollama cloud models: qwen3.5, deepseek-v3.2, glm-5, etc.</p>
+          <p className="text-xs text-stone-400 mt-1">Available: {activeProvider.models}</p>
         </div>
 
         <div className="flex gap-3">

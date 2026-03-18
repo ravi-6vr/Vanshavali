@@ -33,7 +33,7 @@ export default function AIChatPanel() {
   }
 
   const config = getAIConfig();
-  const isConfigured = !!(config?.apiKey);
+  const isConfigured = !!(config?.apiKey || config?.provider === 'local');
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

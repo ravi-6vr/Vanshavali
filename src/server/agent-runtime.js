@@ -6,7 +6,7 @@
  * execution loop: LLM requests tool → agent executes → feeds result back.
  */
 
-const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || 'https://api.ollama.com/v1';
+const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || 'https://ollama.com/v1';
 const OLLAMA_API_KEY = process.env.OLLAMA_API_KEY || '';
 const DEFAULT_MODEL = process.env.OLLAMA_MODEL || 'qwen3.5';
 

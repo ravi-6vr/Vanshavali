@@ -331,12 +331,12 @@ function AIConfigSection({ onMessage }) {
   const getConfig = () => {
     try {
       const stored = localStorage.getItem('vanshavali-ai-config');
-      return stored ? JSON.parse(stored) : { provider: 'ollama', apiKey: '', baseUrl: 'https://ollama.com/v1', model: 'qwen3.5' };
+      return stored ? JSON.parse(stored) : { provider: 'ollama', apiKey: '', baseUrl: 'https://ollama.com', model: 'qwen3-vl:235b-instruct' };
     } catch { return { provider: 'ollama', apiKey: '', baseUrl: 'https://ollama.com/v1', model: 'qwen3.5' }; }
   };
 
   const PROVIDERS = [
-    { id: 'ollama', name: 'Ollama Cloud', baseUrl: 'https://ollama.com/v1', models: 'qwen3.5, deepseek-v3.2, glm-5, nemotron-3-super', defaultModel: 'qwen3.5' },
+    { id: 'ollama', name: 'Ollama Cloud', baseUrl: 'https://ollama.com', models: 'qwen3-vl:235b-instruct, qwen3.5, deepseek-v3.2, glm-5', defaultModel: 'qwen3-vl:235b-instruct' },
     { id: 'openai', name: 'OpenAI', baseUrl: 'https://api.openai.com/v1', models: 'gpt-4o, gpt-4o-mini, gpt-3.5-turbo', defaultModel: 'gpt-4o-mini' },
     { id: 'anthropic', name: 'Anthropic', baseUrl: 'https://api.anthropic.com/v1', models: 'claude-sonnet-4-6, claude-haiku-4-5', defaultModel: 'claude-sonnet-4-6' },
     { id: 'groq', name: 'Groq', baseUrl: 'https://api.groq.com/openai/v1', models: 'llama-3.3-70b, mixtral-8x7b', defaultModel: 'llama-3.3-70b' },
@@ -347,6 +347,7 @@ function AIConfigSection({ onMessage }) {
 
   const [config, setConfig] = useState(getConfig);
   const [showKey, setShowKey] = useState(false);
+  const [testing, setTesting] = useState(false);
 
   const selectProvider = (providerId) => {
     const provider = PROVIDERS.find(p => p.id === providerId);
@@ -370,9 +371,34 @@ function AIConfigSection({ onMessage }) {
     }
   };
 
+  const testConnection = async () => {
+    setTesting(true);
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: 'Say "Connection successful" in one sentence.',
+          sessionId: 'test-' + Date.now(),
+          config,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        onMessage(`Test failed: ${data.error}`);
+      } else {
+        onMessage(`Test passed! Response: "${data.content?.slice(0, 100)}..."`);
+      }
+    } catch (err) {
+      onMessage(`Test failed: ${err.message}`);
+    } finally {
+      setTesting(false);
+    }
+  };
+
   const clearConfig = () => {
     localStorage.removeItem('vanshavali-ai-config');
-    setConfig({ provider: 'ollama', apiKey: '', baseUrl: 'https://ollama.com/v1', model: 'qwen3.5' });
+    setConfig({ provider: 'ollama', apiKey: '', baseUrl: 'https://ollama.com', model: 'qwen3-vl:235b-instruct' });
     onMessage('AI configuration cleared.');
   };
 
@@ -456,6 +482,7 @@ function AIConfigSection({ onMessage }) {
 
         <div className="flex gap-3">
           <button onClick={saveConfig} className="btn btn-primary">Save AI Config</button>
+          <button onClick={testConnection} className="btn btn-secondary">{testing ? 'Testing...' : 'Test Connection'}</button>
           <button onClick={clearConfig} className="btn btn-secondary">Clear</button>
         </div>
 

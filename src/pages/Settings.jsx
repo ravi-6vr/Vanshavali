@@ -305,6 +305,9 @@ export default function Settings() {
         </div>
       </div>
 
+      {/* AI Configuration */}
+      <AIConfigSection onMessage={setMessage} />
+
       {/* Statistics */}
       <div className="card">
         <h3 className="card-header">Data Statistics</h3>
@@ -318,6 +321,101 @@ export default function Settings() {
           <Stat label="With Nakshatram" value={members.filter(m => m.nakshatram).length} />
           <Stat label="With Gotram" value={members.filter(m => m.gotram).length} />
           <Stat label="Storage" value="SQLite (local)" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AIConfigSection({ onMessage }) {
+  const getConfig = () => {
+    try {
+      const stored = localStorage.getItem('vanshavali-ai-config');
+      return stored ? JSON.parse(stored) : { apiKey: '', baseUrl: 'https://api.ollama.com/v1', model: 'qwen3.5' };
+    } catch { return { apiKey: '', baseUrl: 'https://api.ollama.com/v1', model: 'qwen3.5' }; }
+  };
+
+  const [config, setConfig] = useState(getConfig);
+  const [showKey, setShowKey] = useState(false);
+
+  const saveConfig = () => {
+    if (config.apiKey) {
+      localStorage.setItem('vanshavali-ai-config', JSON.stringify(config));
+      onMessage('AI configuration saved! You can now use the chat panel.');
+    } else {
+      localStorage.removeItem('vanshavali-ai-config');
+      onMessage('AI configuration cleared.');
+    }
+  };
+
+  const clearConfig = () => {
+    localStorage.removeItem('vanshavali-ai-config');
+    setConfig({ apiKey: '', baseUrl: 'https://api.ollama.com/v1', model: 'qwen3.5' });
+    onMessage('AI configuration cleared.');
+  };
+
+  return (
+    <div className="card mb-6">
+      <h3 className="card-header">AI Configuration <span className="font-telugu text-xs font-normal text-stone-400 ml-1">కృత్రిమ మేధ</span></h3>
+      <p className="text-xs text-stone-500 mb-4">
+        Optional: Connect an LLM to chat with your family data using AI agents.
+        Your API key is stored only in your browser (localStorage) — never sent to our server or committed to git.
+      </p>
+
+      <div className="space-y-4">
+        <div>
+          <label className="label">API Key</label>
+          <div className="flex gap-2">
+            <input
+              type={showKey ? 'text' : 'password'}
+              className="input flex-1"
+              value={config.apiKey}
+              onChange={e => setConfig({ ...config, apiKey: e.target.value })}
+              placeholder="Enter your Ollama Cloud API key"
+            />
+            <button
+              type="button"
+              onClick={() => setShowKey(!showKey)}
+              className="px-3 py-2 border border-stone-300 rounded-lg text-sm text-stone-600 hover:bg-stone-50"
+            >
+              {showKey ? 'Hide' : 'Show'}
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <label className="label">Base URL</label>
+          <input
+            type="text"
+            className="input"
+            value={config.baseUrl}
+            onChange={e => setConfig({ ...config, baseUrl: e.target.value })}
+            placeholder="https://api.ollama.com/v1"
+          />
+          <p className="text-xs text-stone-400 mt-1">Change this if using a different provider (OpenAI, local Ollama, etc.)</p>
+        </div>
+
+        <div>
+          <label className="label">Model</label>
+          <input
+            type="text"
+            className="input"
+            value={config.model}
+            onChange={e => setConfig({ ...config, model: e.target.value })}
+            placeholder="qwen3.5"
+          />
+          <p className="text-xs text-stone-400 mt-1">Ollama cloud models: qwen3.5, deepseek-v3.2, glm-5, etc.</p>
+        </div>
+
+        <div className="flex gap-3">
+          <button onClick={saveConfig} className="btn btn-primary">Save AI Config</button>
+          <button onClick={clearConfig} className="btn btn-secondary">Clear</button>
+        </div>
+
+        <div className="p-3 bg-stone-50 rounded-lg text-xs text-stone-500">
+          <p className="font-medium text-stone-700 mb-1">How it works</p>
+          <p>When configured, a chat button appears at the bottom-right. The AI uses 4 specialized agents — Bandhuvulu (relationships), Arogya (health), Katha (stories), and Samskara (cultural) — coordinated by the Kula orchestrator to answer questions about your family tree.</p>
+          <p className="mt-1">The app works fully without AI. This is an optional enhancement.</p>
         </div>
       </div>
     </div>

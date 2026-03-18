@@ -5,6 +5,7 @@ import Layout from './components/Layout';
 import LockScreen from './components/LockScreen';
 import GlobalSearch from './components/GlobalSearch';
 import OnboardingWizard from './components/OnboardingWizard';
+import AIChatPanel from './components/AIChatPanel';
 import Dashboard from './pages/Dashboard';
 import MemberList from './pages/MemberList';
 import MemberForm from './pages/MemberForm';
@@ -64,6 +65,7 @@ export default function App() {
   return (
     <Layout>
       <GlobalSearch />
+      <AIChatPanel />
       <Routes>
         <Route path="/" element={<Dashboard />} />
         <Route path="/members" element={<MemberList />} />

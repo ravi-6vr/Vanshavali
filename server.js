@@ -819,6 +819,77 @@ app.get('/api/search', (req, res) => {
   res.json({ results: [...matchedMembers, ...stories] });
 });
 
+// === AI CHAT (Multi-Agent System) ===
+// The agent system is optional — works only when API key is configured.
+// The app functions fully without it.
+
+let agentSystem = null;
+
+async function getAgentSystem(config) {
+  if (!config?.apiKey) return null;
+
+  // Lazy import to avoid errors if agents aren't needed
+  if (!agentSystem) {
+    try {
+      const { createAgentSystem } = await import('./src/server/orchestrator.js');
+      agentSystem = createAgentSystem(db, config);
+    } catch (err) {
+      console.error('  Failed to initialize agent system:', err.message);
+      return null;
+    }
+  }
+  return agentSystem;
+}
+
+// AI config — receives API key + model from frontend (stored in client localStorage, never on server)
+app.post('/api/ai/config', async (req, res) => {
+  const { apiKey, baseUrl, model } = req.body;
+  if (!apiKey) return res.status(400).json({ error: 'API key is required' });
+
+  try {
+    const system = await getAgentSystem({ apiKey, baseUrl, model });
+    if (system) {
+      system.updateConfig({ apiKey, baseUrl, model });
+    }
+    res.json({ success: true, model: model || 'qwen3.5' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Chat endpoint — main entry point for AI queries
+app.post('/api/chat', async (req, res) => {
+  const { message, sessionId, config } = req.body;
+  if (!message) return res.status(400).json({ error: 'Message is required' });
+
+  const apiKey = config?.apiKey;
+  if (!apiKey) {
+    return res.status(400).json({
+      error: 'AI not configured. Please add your Ollama Cloud API key in Settings → AI Configuration.',
+    });
+  }
+
+  try {
+    const system = await getAgentSystem({
+      apiKey,
+      baseUrl: config?.baseUrl,
+      model: config?.model,
+    });
+
+    if (!system) {
+      return res.status(500).json({ error: 'Failed to initialize agent system' });
+    }
+
+    system.updateConfig({ apiKey, baseUrl: config?.baseUrl, model: config?.model });
+
+    const result = await system.chat(message, { sessionId });
+    res.json(result);
+  } catch (err) {
+    console.error('  Chat error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // === SERVE BUILT REACT APP ===
 const distPath = join(__dirname, 'dist');
 if (existsSync(distPath)) {

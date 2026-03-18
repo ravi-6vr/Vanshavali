@@ -11,13 +11,13 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const app = express();
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
 
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
 // === DATA DIRECTORY ===
-const DATA_DIR = join(__dirname, '..', 'data-json');
+const DATA_DIR = join(__dirname, 'data-json');
 const PHOTOS_DIR = join(DATA_DIR, 'photos');
 const DB_FILE = join(DATA_DIR, 'vanshavali.db');
 const AUTH_FILE = join(DATA_DIR, '.vanshavali-auth.json');
